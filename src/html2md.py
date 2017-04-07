@@ -14,28 +14,35 @@ def find_last_non_empty_line():
     return 0
 
 
+def log_print(*args):
+    verbose = False
+    if verbose:
+        print(*args)
+
+
 def recursive_print(bs_tag, level):
     # print(level)
     level += 1
-    print("LEVEL", level)
+    log_print("LEVEL", level)
     if type(bs_tag) == bs4.element.ProcessingInstruction:
-        print("PROCIN", bs_tag)
+        log_print("PROCIN", bs_tag)
         return
     elif type(bs_tag) == bs4.element.Doctype:
-        print("DOCTYP", bs_tag)
+        log_print("DOCTYP", bs_tag)
         return
     elif type(bs_tag) == bs4.element.Tag:
-        print("TAGTAG", bs_tag.name)
+        log_print("TAGTAG", bs_tag.name)
         if bs_tag.name == 'hr':
             markdown[find_last_non_empty_line()] = "## " + markdown[find_last_non_empty_line()]
         elif bs_tag.name == 'br':
             if len(markdown) < 2 or (markdown[-1] != '\n' and markdown[-2] != '\n'):
-                print("NEWLINE_A")
+                log_print("NEWLINE_A")
                 markdown.append('\n')
         elif bs_tag.name == "img":
-            markdown.append("![ " + "] (" + os.path.join('r', bs_tag["src"].split('/')[-1]) + ")" + ")")
+            markdown.append("![ " + "] (" + os.path.join('r', bs_tag["src"].split('/')[-1]) + ")" )
+            markdown.append('\n')
     elif type(bs_tag) == bs4.element.NavigableString:
-        print("STRING", len(str(bs_tag.string)), bs_tag.parent.name, ":", bs_tag)
+        log_print("STRING", len(str(bs_tag.string)), bs_tag.parent.name, ":", bs_tag)
         # if  and bs_tag.parent.tag
         # if str(bs_tag.string) != '\n' or (str(bs_tag.string) == '\n' and markdown[-1] != '\n'):
 
@@ -56,11 +63,11 @@ def recursive_print(bs_tag, level):
                 else:
                     markdown.append("[" + bs_tag.string.split('/')[-1] + "] (" + os.path.join('r', bs_tag.parent["href"].split('/')[-1]) + ")")
             else:
-                markdown.append('WTF')
+                markdown.append("<" + bs_tag.string + ">")
         else:
             if bs_tag.string == "\n":
                 if len(markdown) < 2 or (markdown[-1] != '\n' and markdown[-2] != '\n'):
-                    print("NEWLINE_B")
+                    log_print("NEWLINE_B")
                     markdown.append('\n')
             else:
                 markdown.append(bs_tag.string)
@@ -79,16 +86,18 @@ def write_markdown(markdown, path):
 
 if __name__ == "__main__":
     markdown = ['']
-    file_path = '/Users/mbarakatt/Documents/2016/2016.html'
+    # file_path = os.path.abspath(sys.argv[1])
+    file_path = sys.argv[1]  #
     file_name = file_path.split('/')[-1][:-len(".html")]
     output_folder = file_name
     containing_folder = file_path[:-len(file_path.split('/')[-1])]
     path = os.path.join(output_folder, file_name + ".md")
+    if not os.path.isdir(path[:-len(path.split('/')[-1])]):
+        os.makedirs(path[:-len(path.split('/')[-1])])
     if os.path.isdir(os.path.join(containing_folder, file_name + '.resources')):
-        if not os.path.isdir(path[:-len(path.split('/')[-1])]):
-            os.makedirs(path[:-len(path.split('/')[-1])])
-        bash_command = "cp -r " + os.path.join(containing_folder, file_name + '.resources') + " " + os.path.join(output_folder, "r")
-        subprocess.Popen(bash_command.split()).communicate()  # this way preserves accents in file name
+        # bash_command = "cp -r " + os.path.join(containing_folder, file_name + '.resources').replace(' ', ' ')+ " " + os.path.join(output_folder, "r").replace(' ', ' ')
+        # print("back_copy_command", bash_command)
+        subprocess.Popen(['cp',  '-r',  os.path.join(containing_folder, file_name + '.resources'), os.path.join(output_folder, "r")]).communicate()  # this way preserves accents in file name
     input_text = open(file_path, 'r').read()
     output_text = BeautifulSoup(input_text, 'html.parser')
     recursive_print(output_text.body, 0)
